@@ -1,0 +1,128 @@
+name: Triage a failed run
+
+# Reusable: a repository calls this when one of its workflows fails. A local
+# model runner on the self-hosted runner (pi + Ollama today) reads the failed
+# log and the code, finds the cause, and may fix it.
+#   * a code fix -> a pull request from triage/run-<id>, never merged here
+#   * no fix     -> an issue with the runner's report
+# The runner runs with no GitHub token and no secrets in its environment.
+#
+# Caller (in the other repository, .github/workflows/ci-failure-triage.yml):
+#
+#   on:
+#     workflow_run:
+#       workflows: ["CI"]
+#       types: [completed]
+#   permissions: {contents: write, pull-requests: write, issues: write, actions: read}
+#   jobs:
+#     triage:
+#       if: >-
+#         github.event.workflow_run.conclusion == 'failure' &&
+#         !startsWith(github.event.workflow_run.head_branch, 'triage/')
+#       uses: <owner>/<repo-holding-this-workflow>/.github/workflows/triage.yml@main
+#
+# Keep the prompt below in step with scripts/ci_triage.sh: a private reusable
+# workflow cannot check this repository out with the caller's token, so the
+# prompt lives in both places.
+on:
+  workflow_call:
+    inputs:
+      model:
+        description: Local model the runner uses (an Ollama tag today).
+        type: string
+        default: qwen3.8:27b
+      runner:
+        description: JSON list of runner labels (self-hosted, with the local model runner).
+        type: string
+        default: '["self-hosted", "macOS", "ARM64"]'
+      checks:
+        description: The command that verifies a fix, run by the model runner after editing.
+        type: string
+        default: "the checks AGENTS.md or README.md documents"
+
+jobs:
+  triage:
+    runs-on: ${{ fromJSON(inputs.runner) }}
+    timeout-minutes: 90
+    concurrency:
+      group: ci-debug-triage-${{ github.repository }}
+      cancel-in-progress: false
+    env:
+      GH_TOKEN: ${{ github.token }}
+      RUN_ID: ${{ github.event.workflow_run.id }}
+      RUN_NAME: ${{ github.event.workflow_run.name }}
+      RUN_URL: ${{ github.event.workflow_run.html_url }}
+      HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
+          fetch-depth: 0
+
+      - name: Collect the failed log
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/triage"
+          gh run view "$RUN_ID" --log-failed | tail -n 400 > "$RUNNER_TEMP/triage/failed.log" || true
+          wc -l "$RUNNER_TEMP/triage/failed.log"
+
+      - name: Troubleshoot with the local model runner
+        shell: bash
+        env:
+          MODEL: ${{ inputs.model }}
+          CHECKS: ${{ inputs.checks }}
+        run: |
+          set -uo pipefail
+          log="$RUNNER_TEMP/triage/failed.log"
+          read -r -d '' prompt <<EOF || true
+          A GitHub Actions run failed in this repository (run ${RUN_ID}, "${RUN_NAME}").
+          The failed steps' log is in ${log}. Read AGENTS.md first if it exists.
+
+          Find the root cause and fix it with the smallest change that addresses it:
+          - Read the log, then the code the failing step runs. Trace the cause; do not
+            patch the symptom.
+          - If a code change fixes it, make it and run ${CHECKS}.
+          - If the cause is outside the code (an outage, an expired credential, a runner
+            problem), change nothing and say so.
+
+          Never: commit, push, merge, run gh, touch .github/workflows, print or read
+          secrets, keys or tokens, or delete files you did not create.
+
+          Finish with a short report in plain prose: what failed, the cause, what you
+          changed (file and why) or why nothing was changed, and the check result.
+          EOF
+          env -u GH_TOKEN -u GITHUB_TOKEN -u OPENAI_API_KEY -u ANTHROPIC_API_KEY -u BRAVE_API_KEY \
+            pi -p --provider ollama --model "$MODEL" --no-session \
+               --tools read,bash,edit,write "$prompt" > "$RUNNER_TEMP/triage/report.md" 2>&1 \
+            || echo "The model runner exited with an error; see the report above." >> "$RUNNER_TEMP/triage/report.md"
+          cat "$RUNNER_TEMP/triage/report.md"
+
+      - name: Open a pull request or an issue
+        shell: bash
+        run: |
+          set -euo pipefail
+          # The runner may not edit workflows; anything it changed there is discarded.
+          git checkout -- .github 2>/dev/null || true
+          git clean -fdq -- .github 2>/dev/null || true
+          {
+            echo "Automatic triage of [$RUN_NAME run $RUN_ID]($RUN_URL) at \`${HEAD_SHA:0:7}\` by a local model (${{ inputs.model }})."
+            echo
+            echo "Review before merging: written by a local model and unverified."
+            echo
+            echo '---'
+            echo
+            cat "$RUNNER_TEMP/triage/report.md"
+          } > "$RUNNER_TEMP/triage/body.md"
+          if [ -n "$(git status --porcelain)" ]; then
+            branch="triage/run-$RUN_ID"
+            git switch -c "$branch"
+            git add -A
+            git -c user.name="github-actions[bot]" -c user.email="41898282+github-actions[bot]@users.noreply.github.com" \
+              commit -q -m "Fix the failure in $RUN_NAME run $RUN_ID (automatic triage)"
+            git push -q origin "$branch"
+            gh pr create --base "${{ github.event.repository.default_branch }}" --head "$branch" \
+              --title "Triage: fix $RUN_NAME failure (run $RUN_ID)" --body-file "$RUNNER_TEMP/triage/body.md"
+          else
+            gh issue create --title "CI failure: $RUN_NAME (run $RUN_ID)" --body-file "$RUNNER_TEMP/triage/body.md"
+          fi

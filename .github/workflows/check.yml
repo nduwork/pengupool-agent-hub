@@ -1,0 +1,42 @@
+name: Check catalog
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    # GitHub-hosted, so no outside code reaches the owner's Mac; pull requests from forks get no CI.
+    if: github.event_name == 'push' || github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Check the catalog and its helpers
+        # Every helper lives in this repository and is read from the checkout (on a pull request,
+        # the merge commit). A helper kept in another public repository is read through the API.
+        run: |
+          python3 scripts/check_catalog.py --selftest
+          python3 scripts/check_catalog.py
+      - name: Install resvg, which the SVG draft check renders with
+        env:
+          RESVG_URL: https://github.com/linebender/resvg/releases/download/v0.47.0/resvg-linux-x86_64.tar.gz
+          RESVG_SHA256: 5c84dcbcd032fe7e8d96e616fd6807a2f9df6561d2e6582b37e91e63c6cb4fe7
+        run: |
+          curl -fsSL -o "$RUNNER_TEMP/resvg.tar.gz" "$RESVG_URL"
+          echo "$RESVG_SHA256  $RUNNER_TEMP/resvg.tar.gz" | sha256sum -c -
+          mkdir -p "$RUNNER_TEMP/resvg" "$RUNNER_TEMP/bin"
+          tar -xzf "$RUNNER_TEMP/resvg.tar.gz" -C "$RUNNER_TEMP/resvg"
+          # resvg defaults to Times New Roman and Arial, which Ubuntu lacks, and ignores fontconfig
+          # aliases: point the serif and sans-serif families at the metric-compatible Liberation faces.
+          printf '#!/bin/sh\nexec "%s/resvg/resvg" --serif-family "Liberation Serif" --sans-serif-family "Liberation Sans" "$@"\n' \
+            "$RUNNER_TEMP" > "$RUNNER_TEMP/bin/resvg"
+          chmod +x "$RUNNER_TEMP/bin/resvg"
+          echo "$RUNNER_TEMP/bin" >> "$GITHUB_PATH"
+      - name: Check the SVG draft check catches known failures
+        run: python3 scripts/svg_check_selftest.py

@@ -1,0 +1,9 @@
+.DS_Store
+__pycache__/
+
+# Owner memory: personal, never committed (anchored so docs/memory.md is not ignored)
+/MEMORY.md
+/MEMORY.md.lock
+
+# The local runner fleet (runners.example.json shows the format); never committed
+/runners.local.json

@@ -1,0 +1,356 @@
+{
+  "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
+  "name": "pengupool-marketplace",
+  "description": "Helper agents for PenguPool: each lives in agents/<name> of this repository, pinned to a commit.",
+  "owner": {
+    "name": "nduwork",
+    "url": "https://github.com/nduwork"
+  },
+  "plugins": [
+    {
+      "name": "ios-app-agent",
+      "description": "Takes a SwiftUI app from repo to TestFlight and the App Store: XcodeGen project, fastlane lanes, the TestFlight CI workflow on the self-hosted Mac, and App Store Connect records, builds and review details through the API. Keeps signing keys, certificates, profiles and GitHub secrets in their places and never prints them, and knows the CloudKit, StoreKit and App Review traps. Put it on a team that is setting up, shipping or unblocking an iOS app.",
+      "category": "apps",
+      "keywords": [
+        "ios-shipping"
+      ],
+      "source": {
+        "source": "git-subdir",
+        "url": "https://github.com/nduwork/pengupool-agent-hub.git",
+        "path": "agents/apps/ios-app-agent",
+        "ref": "main"
+      },
+      "strict": false
+    },
+    {
+      "name": "macos-app-agent",
+      "description": "Takes a macOS app (Electron, SwiftPM or Xcode) from an unsigned build to a Developer ID signed, notarized and stapled .app and DMG that opens without an unidentified-developer block: inside-out signing with hardened runtime, minimal entitlements, notarytool with a keychain profile locally or an App Store Connect API key in CI, a scripted sign, DMG, notarize and verify flow, and update-path signature checks. Triages notary rejections, Gatekeeper warnings and lost privacy permissions, keeps certificates and keys out of sight, and hands iOS and App Store Connect work to ios-app-agent. Put it on a team that is releasing or unblocking a Mac app.",
+      "category": "apps",
+      "keywords": [
+        "macos-shipping"
+      ],
+      "source": {
+        "source": "git-subdir",
+        "url": "https://github.com/nduwork/pengupool-agent-hub.git",
+        "path": "agents/apps/macos-app-agent",
+        "ref": "main"
+      },
+      "strict": false
+    },
+    {
+      "name": "research-agent",
+      "description": "An on-demand engineering scout: it frames a question, surveys prior art, verifies claims against primary sources and returns an answer-first report with a source and confidence for every key claim. Playbooks cover workflow and API design, datasource discovery, repo and tooling setup, trade studies and brainstorming, and it can index reusable findings in a curated library. Put it on a team that needs a decision researched before anyone builds.",
+      "category": "research",
+      "keywords": [
+        "research-agent",
+        "research-library"
+      ],
+      "source": {
+        "source": "git-subdir",
+        "url": "https://github.com/nduwork/pengupool-agent-hub.git",
+        "path": "agents/research/research-agent",
+        "ref": "main"
+      },
+      "strict": false
+    },
+    {
+      "name": "git-ci-agent",
+      "description": "Troubleshoots failed GitHub Actions runs: reads the logs, names the failing step and its cause, and proposes a fix. Triage runs with pi on a local Ollama model, and it can wire a repository to the reusable auto-triage workflow so failures are diagnosed as they happen. Put it on a team whose CI keeps failing or that wants failed runs triaged automatically.",
+      "category": "operations",
+      "keywords": [
+        "ci-debug"
+      ],
+      "source": {
+        "source": "git-subdir",
+        "url": "https://github.com/nduwork/pengupool-agent-hub.git",
+        "path": "agents/operations/git-ci-agent",
+        "ref": "main"
+      },
+      "strict": false
+    },
+    {
+      "name": "pr-review-agent",
+      "description": "Peer-reviews a pull request, read-only: traces every reader of the state the change writes, checks the PR description's claims against the code, reproduces or statically proves each blocker and tries to disprove it, tags findings new or pre-existing, and reports the outcome, the findings and CI separately (never \"merge-ready\"). Re-review covers only the delta, in at most 3 rounds. The review runs on cheap read-only subagents by default, or in the reviewer's own session, as each user chooses. An opt-in adversarial review is available for risky PRs, and an optional author-side skill writes a Mermaid flowchart of the change into the PR description. Put it on a team that needs a PR reviewed before the owner merges.",
+      "category": "code",
+      "keywords": [
+        "peer-review",
+        "peer-review-subagents",
+        "peer-review-rereview",
+        "peer-review-multi-pr",
+        "review-guide-flowchart",
+        "review-guide-adversarial-review"
+      ],
+      "source": {
+        "source": "git-subdir",
+        "url": "https://github.com/nduwork/pengupool-agent-hub.git",
+        "path": "agents/code/pr-review-agent",
+        "ref": "main"
+      },
+      "strict": false
+    },
+    {
+      "name": "git-runner-agent",
+      "description": "Keeps the self-hosted GitHub Actions runners on the build Mac healthy: health checks and stats, diagnosing hung or dead jobs, and maintaining the host LaunchAgents. Sets up, registers, upgrades and restarts runners for a repository, and keeps the runner inventory consistent across the README, the stats builder and the stats JSON. Put it on a team when jobs queue, hang or never start, or a repository needs its own runners.",
+      "category": "operations",
+      "keywords": [
+        "runner-health",
+        "runner-setup",
+        "runner-inventory"
+      ],
+      "source": {
+        "source": "git-subdir",
+        "url": "https://github.com/nduwork/pengupool-agent-hub.git",
+        "path": "agents/operations/git-runner-agent",
+        "ref": "main"
+      },
+      "strict": false
+    },
+    {
+      "name": "frontend-ui-agent",
+      "description": "A design engineer for PenguPool's desktop UI (Electron, React, Tailwind, Radix): plans a screen against generic defaults, then builds it with the existing tokens and components, covering hierarchy, states, motion, copy, accessibility and the Workspace map. Reviews a screen with worst-case data, a keyboard and contrast pass and screenshots, and reports findings for the owner to pick; DESIGN.md stays the authority. Put it on a team that is building, rebuilding or reviewing PenguPool's UI.",
+      "category": "apps",
+      "keywords": [
+        "pengupool-ui-design"
+      ],
+      "source": {
+        "source": "git-subdir",
+        "url": "https://github.com/nduwork/pengupool-agent-hub.git",
+        "path": "agents/apps/frontend-ui-agent",
+        "ref": "main"
+      },
+      "strict": false,
+      "credits": [
+        {
+          "name": "emilkowalski/skills",
+          "url": "https://github.com/emilkowalski/skills"
+        },
+        {
+          "name": "garrytan/gstack",
+          "url": "https://github.com/garrytan/gstack"
+        },
+        {
+          "name": "cathrynlavery/diagram-design",
+          "url": "https://github.com/cathrynlavery/diagram-design"
+        },
+        {
+          "name": "anthropics/skills",
+          "url": "https://github.com/anthropics/skills"
+        },
+        {
+          "name": "anthropics/knowledge-work-plugins",
+          "url": "https://github.com/anthropics/knowledge-work-plugins"
+        },
+        {
+          "name": "wshobson/agents",
+          "url": "https://github.com/wshobson/agents"
+        }
+      ]
+    },
+    {
+      "name": "team-lead-agent",
+      "description": "Leads a PenguPool team from the root of its tree when no member's repository should lead it, and stays while members join and leave. It passes work and questions along the team tree, writes each assignment so it can be checked, and composes the members' results into one report (skill team-hub); routes each part to the member whose role fits and asks the owner to add or remove members (skill team-org); collects the owner's ideas as proposed team memories and shapes a group into a brief (skill idea-queue); and turns goals, briefs and past tasks into proposed epics with checkable milestones (skill epic-planning). It checks the claims the work turns on against requirements, merged code and aggregate data before relaying them (skill ground-truth); audits a design or built screen against what already ships and against the design's images (skill design-audit); and prepares members for a human reviewer and drives review comments to resolved threads (skill review-loop). It owns no code and cannot merge, approve, change the team or adopt anything on the board.",
+      "category": "team",
+      "keywords": [
+        "team-hub",
+        "team-org",
+        "idea-queue",
+        "epic-planning",
+        "ground-truth",
+        "design-audit",
+        "review-loop"
+      ],
+      "source": {
+        "source": "git-subdir",
+        "url": "https://github.com/nduwork/pengupool-agent-hub.git",
+        "path": "agents/team/team-lead-agent",
+        "ref": "main"
+      },
+      "strict": false
+    },
+    {
+      "name": "dev-workflow-agent",
+      "description": "Takes one code change from request to a verified, integration-ready branch: plans it as thin slices that each end in a check, builds each slice test-first, debugs failures down to their root cause, simplifies the finished change without changing behaviour, and proves it works with fresh evidence before calling it done. It works in one repository at a time and never pushes or merges without the owner's choice. It does not review pull requests, triage CI failures or plan team epics.",
+      "category": "code",
+      "keywords": [
+        "implementation-plan",
+        "test-first",
+        "root-cause-debugging",
+        "simplify-change",
+        "verify-and-finish"
+      ],
+      "source": {
+        "source": "git-subdir",
+        "url": "https://github.com/nduwork/pengupool-agent-hub.git",
+        "path": "agents/code/dev-workflow-agent",
+        "ref": "main"
+      },
+      "strict": false,
+      "credits": [
+        {
+          "name": "obra/superpowers",
+          "url": "https://github.com/obra/superpowers"
+        }
+      ]
+    },
+    {
+      "name": "api-design-agent",
+      "description": "Designs and reviews interfaces and service boundaries: drafts API contracts (REST, GraphQL, RPC or module), checks them for naming, pagination, error design, idempotency and versioning, and picks the simplest architecture shape that fits the forces at hand. Records each costly-to-reverse decision as a short ADR next to the code. It proposes designs and writes contract and ADR files only in paths its assignment owns; it does not implement the service.",
+      "category": "code",
+      "keywords": [
+        "api-contract",
+        "architecture-choice",
+        "decision-records"
+      ],
+      "source": {
+        "source": "git-subdir",
+        "url": "https://github.com/nduwork/pengupool-agent-hub.git",
+        "path": "agents/code/api-design-agent",
+        "ref": "main"
+      },
+      "strict": false
+    },
+    {
+      "name": "security-agent",
+      "description": "Finds and fixes security weaknesses in a change or a codebase: untrusted input and injection, authentication and authorization, secrets in code, logs and CI, and unsafe shell scripts. Reports findings ranked by severity, each with a concrete fix and a check that proves it, then fixes only what the owner picks. It does not probe systems outside the owner's code and test environment, print secret values, or add dependencies without the owner's approval.",
+      "category": "code",
+      "keywords": [
+        "harden-inputs-and-auth",
+        "secrets-hygiene",
+        "defensive-shell"
+      ],
+      "source": {
+        "source": "git-subdir",
+        "url": "https://github.com/nduwork/pengupool-agent-hub.git",
+        "path": "agents/code/security-agent",
+        "ref": "main"
+      },
+      "strict": false
+    },
+    {
+      "name": "ops-readiness-agent",
+      "description": "Gets a service ready for production and keeps it there: adds logs, metrics, traces and symptom-based alerts with runbooks, finds and fixes performance problems with before/after measurements, runs launch, rollback and deprecation checklists, and runs incident response from triage to a blameless review. It prepares the exact commands and checklists for the owner to run. It never deploys, rolls back or changes production without the owner's go-ahead, and it does not triage CI failures or look after self-hosted runners.",
+      "category": "operations",
+      "keywords": [
+        "instrument-service",
+        "performance-pass",
+        "launch-checklist",
+        "incident-response"
+      ],
+      "source": {
+        "source": "git-subdir",
+        "url": "https://github.com/nduwork/pengupool-agent-hub.git",
+        "path": "agents/operations/ops-readiness-agent",
+        "ref": "main"
+      },
+      "strict": false
+    },
+    {
+      "name": "gcp-service-agent",
+      "description": "Sets up and runs a service on Google Cloud, Cloud Run first: project bootstrap, per-service accounts and least-privilege IAM, keyless GitHub Actions deploys with Workload Identity Federation, Artifact Registry, Cloud Run flags, traffic and private service-to-service IAM, Cloud SQL connections sized to the connection budget and locked to connector-only access, Secret Manager, custom domains with the domain-mapping or load-balancer trade-off, and fixed-cost cuts. Triages deploy, permission, 403 and 503 failures. It audits read-only and changes no cloud resource, IAM binding, secret or billing setting without the owner's go-ahead, and never creates a service-account key. Put it on a team that is deploying or running a service on GCP.",
+      "category": "operations",
+      "keywords": [
+        "gcp-service-setup"
+      ],
+      "source": {
+        "source": "git-subdir",
+        "url": "https://github.com/nduwork/pengupool-agent-hub.git",
+        "path": "agents/operations/gcp-service-agent",
+        "ref": "main"
+      },
+      "strict": false
+    },
+    {
+      "name": "data-analysis-agent",
+      "description": "Answers data questions with aggregated evidence: profiles an unfamiliar table or file, writes correct and efficient read-only SQL across major dialects, validates data quality and reconciles results against a source of truth, and runs sound statistical analysis with effect sizes, intervals and plain-language caveats. Every answer includes the query and its caveats. It never returns row-level records or personal data, suppresses cells under 10, and never writes to, alters or deletes from a database unless the owner explicitly asks.",
+      "category": "research",
+      "keywords": [
+        "explore-data",
+        "write-query",
+        "validate-data",
+        "statistical-analysis"
+      ],
+      "source": {
+        "source": "git-subdir",
+        "url": "https://github.com/nduwork/pengupool-agent-hub.git",
+        "path": "agents/research/data-analysis-agent",
+        "ref": "main"
+      },
+      "strict": false
+    },
+    {
+      "name": "bioinfo-agent",
+      "description": "Builds and checks bioinformatics work: writes, runs and debugs Nextflow DSL2 and nf-core pipelines, runs single-cell RNA-seq QC with thresholds taken from the data, and fits and evaluates scvi-tools models for integration, label transfer and differential expression. It also helps choose and scope a research question down to a decisive first experiment. It reports aggregated numbers only and does not print sample-level or patient data, download controlled-access data without approval, or merge or approve changes.",
+      "category": "research",
+      "keywords": [
+        "nextflow-pipelines",
+        "single-cell-qc",
+        "scvi-modelling",
+        "question-selection"
+      ],
+      "source": {
+        "source": "git-subdir",
+        "url": "https://github.com/nduwork/pengupool-agent-hub.git",
+        "path": "agents/research/bioinfo-agent",
+        "ref": "main"
+      },
+      "strict": false,
+      "credits": [
+        {
+          "name": "anthropics/knowledge-work-plugins",
+          "url": "https://github.com/anthropics/knowledge-work-plugins"
+        }
+      ]
+    },
+    {
+      "name": "motion-video-agent",
+      "description": "Makes short motion videos as code: product films, explainers, loops, logo reveals and social clips. It writes a deterministic HTML scene where every frame is a pure function of time, renders it frame-exact in headless Chromium, encodes with ffmpeg, and scores its own stills with frame-numbered fixes before the owner approves a full render. It covers the brief, motion numbers, approval gates, licensed sound and a -14 LUFS mix, QA sheets and export formats, and knows when Remotion, HyperFrames, three.js, Manim, Blender or a video model fits better. It uses real assets only and never fakes a UI, brand or metric. Put it on a team that needs a launch film, demo clip or animated explainer.",
+      "category": "apps",
+      "keywords": [
+        "motion-video"
+      ],
+      "source": {
+        "source": "git-subdir",
+        "url": "https://github.com/nduwork/pengupool-agent-hub.git",
+        "path": "agents/apps/motion-video-agent",
+        "ref": "main"
+      },
+      "strict": false
+    },
+    {
+      "name": "logo-design-agent",
+      "description": "Designs logos and brand marks from brief to production files: discovery and the design brief, category research, concepts across mark types (wordmark, monogram, pictorial, abstract, emblem, combination), clean geometric SVG built by hand, optical refinement, colour and typography, and tests at 16 px, in one colour, reversed and against competitors. It stops at a concept checkpoint for the user's choice, then delivers lockups, favicon, app-icon and web-icon sets, export variants, a presentation and a usage guide. It also critiques and redesigns existing logos. Dependency-free scripts audit SVGs, render PNGs and build test and concept sheets. Put it on a team that is naming or branding a product.",
+      "category": "apps",
+      "keywords": [
+        "logo-design"
+      ],
+      "source": {
+        "source": "git-subdir",
+        "url": "https://github.com/nduwork/pengupool-agent-hub.git",
+        "path": "agents/apps/logo-design-agent",
+        "ref": "main"
+      },
+      "strict": false,
+      "credits": [
+        {
+          "name": "kaankiziltug/logo-design-skill",
+          "url": "https://github.com/kaankiziltug/logo-design-skill"
+        }
+      ]
+    },
+    {
+      "name": "worktree-cleanup-agent",
+      "description": "Surveys a repository's git worktrees and removes only the ones that are provably merged and idle: it classifies each branch by ancestry or by a MERGED pull request whose head commit is the local tip, keeps worktrees that are dirty, locked, stashed or have a live session inside, lists unmerged branches for the owner to approve, and prints tip commits so any removal can be undone. Put it on a team that accumulates worktrees and stale branches.",
+      "category": "operations",
+      "keywords": [
+        "worktree-cleanup"
+      ],
+      "source": {
+        "source": "git-subdir",
+        "url": "https://github.com/nduwork/pengupool-agent-hub.git",
+        "path": "agents/operations/worktree-cleanup-agent",
+        "ref": "main"
+      },
+      "strict": false
+    }
+  ]
+}

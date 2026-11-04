@@ -1,0 +1,151 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+RUNNER_ROOT="${RUNNER_ROOT:-$HOME/actions-runners}"
+INSTANCES_DIR="$RUNNER_ROOT/instances"
+LAUNCH_AGENTS_DIR="$HOME/Library/LaunchAgents"
+RUNNER_COUNT="${RUNNER_COUNT:-9}"
+
+if [[ -n "${RUNNER_NAMES:-}" ]]; then
+  # shellcheck disable=SC2206
+  RUNNERS=( $RUNNER_NAMES )
+else
+  RUNNERS=()
+  for ((i = 1; i <= RUNNER_COUNT; i++)); do
+    RUNNERS+=( "${RUNNER_PREFIX:-$(hostname -s)}-$i" )
+  done
+fi
+
+ACTION="${1:-start}"
+
+runner_dir() {
+  local runner_name="$1"
+  printf '%s/%s' "$INSTANCES_DIR" "$runner_name"
+}
+
+launch_label() {
+  local runner_name="$1"
+  printf 'com.github.actions.%s' "$runner_name"
+}
+
+plist_path() {
+  local runner_name="$1"
+  printf '%s/%s.plist' "$LAUNCH_AGENTS_DIR" "$(launch_label "$runner_name")"
+}
+
+# Write a LaunchAgent plist with RunAtLoad + KeepAlive so the runner
+# starts at login and relaunches automatically after a crash or a
+# self-update exit. This is what keeps them always on across reboots.
+write_plist() {
+  local runner_name="$1"
+  local dir
+  dir="$(runner_dir "$runner_name")"
+
+  mkdir -p "$LAUNCH_AGENTS_DIR"
+  cat > "$(plist_path "$runner_name")" <<EOF
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>$(launch_label "$runner_name")</string>
+  <key>ProgramArguments</key>
+  <array>
+    <string>/bin/bash</string>
+    <string>-lc</string>
+    <string>exec ./run.sh</string>
+  </array>
+  <key>WorkingDirectory</key>
+  <string>$dir</string>
+  <key>StandardOutPath</key>
+  <string>$dir/runner.log</string>
+  <key>StandardErrorPath</key>
+  <string>$dir/runner.log</string>
+  <key>RunAtLoad</key>
+  <true/>
+  <key>KeepAlive</key>
+  <true/>
+  <key>ProcessType</key>
+  <string>Background</string>
+</dict>
+</plist>
+EOF
+}
+
+is_running() {
+  local runner_name="$1"
+  launchctl print "gui/$(id -u)/$(launch_label "$runner_name")" >/dev/null 2>&1
+}
+
+start_runner() {
+  local runner_name="$1"
+  local dir
+
+  dir="$(runner_dir "$runner_name")"
+
+  if [[ ! -x "$dir/run.sh" ]]; then
+    echo "Skipping $runner_name: $dir/run.sh is missing or not executable"
+    return 0
+  fi
+
+  if is_running "$runner_name"; then
+    echo "$runner_name is already running"
+    return 0
+  fi
+
+  write_plist "$runner_name"
+  launchctl bootstrap "gui/$(id -u)" "$(plist_path "$runner_name")"
+
+  echo "Started $runner_name"
+  echo "  log: $dir/runner.log"
+}
+
+stop_runner() {
+  local runner_name="$1"
+
+  launchctl bootout "gui/$(id -u)/$(launch_label "$runner_name")" >/dev/null 2>&1 || true
+  rm -f "$(plist_path "$runner_name")"
+
+  echo "Stopped $runner_name"
+}
+
+status_runner() {
+  local runner_name="$1"
+
+  if is_running "$runner_name"; then
+    echo "$runner_name: running"
+  else
+    echo "$runner_name: stopped"
+  fi
+}
+
+case "$ACTION" in
+  start)
+    for runner_name in "${RUNNERS[@]}"; do
+      start_runner "$runner_name"
+    done
+    ;;
+  stop)
+    for runner_name in "${RUNNERS[@]}"; do
+      stop_runner "$runner_name"
+    done
+    ;;
+  restart)
+    for runner_name in "${RUNNERS[@]}"; do
+      stop_runner "$runner_name"
+    done
+    sleep 2
+    for runner_name in "${RUNNERS[@]}"; do
+      start_runner "$runner_name"
+    done
+    ;;
+  status)
+    for runner_name in "${RUNNERS[@]}"; do
+      status_runner "$runner_name"
+    done
+    ;;
+  *)
+    echo "Usage: $0 [start|stop|restart|status]"
+    exit 1
+    ;;
+esac

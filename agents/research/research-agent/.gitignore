@@ -1,0 +1,6 @@
+# agent session scaffold / tooling output
+.step-status/
+.agents/skills/
+
+# OS
+.DS_Store

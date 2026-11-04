@@ -1,0 +1,27 @@
+{
+  "owner": "<github-user-or-org>",
+  "repo_owners": {
+    "<repo-under-another-owner>": "<owner>"
+  },
+  "repo_instances": {
+    "<repo>": [
+      "<host>-<repo>",
+      "<host>-<repo>-2"
+    ],
+    "<repo-with-a-pool>": [
+      "<host>-1",
+      "<host>-2"
+    ]
+  },
+  "launchd_labels": {
+    "<host>-<svc-runner>": "actions.runner.<owner>-<repo>.<host>-<svc-runner>"
+  },
+  "publish": {
+    "repo": "<owner>/<repo>",
+    "workflow": "<workflow>.yml",
+    "fields": [
+      "<input>=<value>"
+    ]
+  },
+  "keychain_lock": "~/Library/Keychains/<signing-action>.lock"
+}
