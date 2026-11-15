@@ -14,6 +14,7 @@ ARCHIVE_DIR="$RUNNER_ROOT/downloads"
 TEMPLATE_DIR="$RUNNER_ROOT/template"
 INSTANCES_DIR="$RUNNER_ROOT/instances"
 PLATFORM="osx-arm64"
+SAVED_SETTINGS=( .process_type )  # files git_runners.sh saves in an instance dir
 
 if [[ -z "$GITHUB_OWNER" || -z "$GITHUB_REPO" ]]; then
   echo "Set GITHUB_OWNER and GITHUB_REPO before running this script."
@@ -92,8 +93,18 @@ clone_instance() {
   local runner_name="$1"
   local dir="$INSTANCES_DIR/$runner_name"
 
+  # Keep the settings git_runners.sh saved for this runner across the re-create.
+  local keep f
+  keep="$(mktemp -d)"
+  for f in "${SAVED_SETTINGS[@]}"; do
+    if [[ -f "$dir/$f" ]]; then mv "$dir/$f" "$keep/"; fi
+  done
   rm -rf "$dir"
   cp -cR "$TEMPLATE_DIR" "$dir"
+  for f in "${SAVED_SETTINGS[@]}"; do
+    if [[ -f "$keep/$f" ]]; then mv "$keep/$f" "$dir/"; fi
+  done
+  rmdir "$keep"
 }
 
 configure_instance() {
