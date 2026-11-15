@@ -49,6 +49,16 @@ write_plist() {
     *) echo "Invalid ProcessType '$process_type' for $runner_name (Background, Standard, Adaptive or Interactive)" >&2; exit 1 ;;
   esac
   printf '%s\n' "$process_type" > "$dir/.process_type"
+  # Optional launcher program placed before bash in the plist (saved as .launcher, like .process_type).
+  # macOS charges a launchd job's file access to its first non-Apple program, normally bin*/Runner.Listener,
+  # whose path changes on every runner update; a fixed launcher keeps one privacy grant (e.g. external drives).
+  local launcher="${LAUNCHER:-$(cat "$dir/.launcher" 2>/dev/null || true)}" launcher_arg=""
+  if [[ -n "$launcher" ]]; then
+    [[ "$launcher" == /* && -x "$launcher" ]] || { echo "Launcher '$launcher' for $runner_name is not an absolute path to an executable" >&2; exit 1; }
+    printf '%s\n' "$launcher" > "$dir/.launcher"
+    launcher_arg="    <string>$launcher</string>
+"
+  fi
 
   mkdir -p "$LAUNCH_AGENTS_DIR"
   cat > "$(plist_path "$runner_name")" <<EOF
@@ -60,7 +70,7 @@ write_plist() {
   <string>$(launch_label "$runner_name")</string>
   <key>ProgramArguments</key>
   <array>
-    <string>/bin/bash</string>
+${launcher_arg}    <string>/bin/bash</string>
     <string>-lc</string>
     <string>exec ./run.sh</string>
   </array>

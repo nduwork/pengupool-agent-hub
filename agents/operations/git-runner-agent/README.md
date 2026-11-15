@@ -92,6 +92,10 @@ Environment variables supported by `git_runners.sh`:
 - `PROCESS_TYPE`: optional launchd `ProcessType` for `start`, defaults to `Background`, which runs jobs on
   efficiency cores with throttled I/O. Use `Standard` for runners with CPU-heavy jobs (video renders,
   builds). It is saved in the instance dir as `.process_type` and kept on later starts.
+- `LAUNCHER`: optional absolute path of a program that starts the runner (`<launcher> /bin/bash -lc 'exec ./run.sh'`).
+  macOS privacy grants (external drives, Full Disk Access) go to a launchd job's first non-Apple program, which
+  is otherwise `bin*/Runner.Listener` and changes path on every runner update. A fixed launcher that spawns its
+  arguments as a child (not exec) keeps one grant. Saved as `.launcher`; delete that file to stop using it.
 
 ## Updating The Runner Version
 
