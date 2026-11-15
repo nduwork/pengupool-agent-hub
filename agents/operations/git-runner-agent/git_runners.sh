@@ -40,6 +40,15 @@ write_plist() {
   local runner_name="$1"
   local dir
   dir="$(runner_dir "$runner_name")"
+  # Background (the default) runs jobs on efficiency cores with throttled I/O. A runner whose jobs are
+  # CPU-heavy (renders, builds) gets PROCESS_TYPE=Standard. It is saved in the instance dir, so a later
+  # start keeps it, and setup_runners.sh carries it over when it re-creates the dir.
+  local process_type="${PROCESS_TYPE:-$(cat "$dir/.process_type" 2>/dev/null || echo Background)}"
+  case "$process_type" in
+    Background|Standard|Adaptive|Interactive) ;;
+    *) echo "Invalid ProcessType '$process_type' for $runner_name (Background, Standard, Adaptive or Interactive)" >&2; return 1 ;;
+  esac
+  printf '%s\n' "$process_type" > "$dir/.process_type"
 
   mkdir -p "$LAUNCH_AGENTS_DIR"
   cat > "$(plist_path "$runner_name")" <<EOF
@@ -66,7 +75,7 @@ write_plist() {
   <key>KeepAlive</key>
   <true/>
   <key>ProcessType</key>
-  <string>Background</string>
+  <string>$process_type</string>
 </dict>
 </plist>
 EOF
@@ -93,7 +102,8 @@ start_runner() {
     return 0
   fi
 
-  write_plist "$runner_name"
+  # A bad setting skips this runner only, so a restart still starts the others.
+  write_plist "$runner_name" || { echo "Skipping $runner_name: fix the setting above" >&2; return 0; }
   launchctl bootstrap "gui/$(id -u)" "$(plist_path "$runner_name")"
 
   echo "Started $runner_name"
