@@ -41,12 +41,12 @@ write_plist() {
   local dir
   dir="$(runner_dir "$runner_name")"
   # Background (the default) runs jobs on efficiency cores with throttled I/O. A runner whose jobs are
-  # CPU-heavy (renders, builds) gets PROCESS_TYPE=Standard. It is saved in the instance dir so a
-  # later stop/start keeps it; setup_runners.sh re-creates the dir, so pass it again after a re-register.
+  # CPU-heavy (renders, builds) gets PROCESS_TYPE=Standard. It is saved in the instance dir, so a later
+  # start keeps it, and setup_runners.sh carries it over when it re-creates the dir.
   local process_type="${PROCESS_TYPE:-$(cat "$dir/.process_type" 2>/dev/null || echo Background)}"
   case "$process_type" in
     Background|Standard|Adaptive|Interactive) ;;
-    *) echo "Invalid ProcessType '$process_type' for $runner_name (Background, Standard, Adaptive or Interactive)" >&2; exit 1 ;;
+    *) echo "Invalid ProcessType '$process_type' for $runner_name (Background, Standard, Adaptive or Interactive)" >&2; return 1 ;;
   esac
   printf '%s\n' "$process_type" > "$dir/.process_type"
   # Optional launcher program placed before bash in the plist (saved as .launcher, like .process_type).
@@ -54,7 +54,11 @@ write_plist() {
   # whose path changes on every runner update; a fixed launcher keeps one privacy grant (e.g. external drives).
   local launcher="${LAUNCHER:-$(cat "$dir/.launcher" 2>/dev/null || true)}" launcher_arg=""
   if [[ -n "$launcher" ]]; then
-    [[ "$launcher" == /* && -x "$launcher" ]] || { echo "Launcher '$launcher' for $runner_name is not an absolute path to an executable" >&2; exit 1; }
+    if [[ "$launcher" != /* || ! -f "$launcher" || ! -x "$launcher" || "$launcher" == *[\&\<\>]* ]]; then
+      echo "Launcher '$launcher' for $runner_name must be an absolute path to an executable file, without & < >" \
+        "(set LAUNCHER again, or delete $dir/.launcher to stop using one)" >&2
+      return 1
+    fi
     printf '%s\n' "$launcher" > "$dir/.launcher"
     launcher_arg="    <string>$launcher</string>
 "
@@ -112,7 +116,8 @@ start_runner() {
     return 0
   fi
 
-  write_plist "$runner_name"
+  # A bad setting skips this runner only, so a restart still starts the others.
+  write_plist "$runner_name" || { echo "Skipping $runner_name: fix the setting above" >&2; return 0; }
   launchctl bootstrap "gui/$(id -u)" "$(plist_path "$runner_name")"
 
   echo "Started $runner_name"
