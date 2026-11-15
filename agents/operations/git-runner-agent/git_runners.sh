@@ -44,6 +44,10 @@ write_plist() {
   # CPU-heavy (renders, builds) gets PROCESS_TYPE=Standard. It is saved in the instance dir so a
   # later stop/start keeps it; setup_runners.sh re-creates the dir, so pass it again after a re-register.
   local process_type="${PROCESS_TYPE:-$(cat "$dir/.process_type" 2>/dev/null || echo Background)}"
+  case "$process_type" in
+    Background|Standard|Adaptive|Interactive) ;;
+    *) echo "Invalid ProcessType '$process_type' for $runner_name (Background, Standard, Adaptive or Interactive)" >&2; exit 1 ;;
+  esac
   printf '%s\n' "$process_type" > "$dir/.process_type"
 
   mkdir -p "$LAUNCH_AGENTS_DIR"
