@@ -40,6 +40,11 @@ write_plist() {
   local runner_name="$1"
   local dir
   dir="$(runner_dir "$runner_name")"
+  # Background (the default) runs jobs on efficiency cores with throttled I/O. A runner whose jobs are
+  # CPU-heavy (renders, builds) gets PROCESS_TYPE=Standard. It is saved in the instance dir so a
+  # later stop/start keeps it; setup_runners.sh re-creates the dir, so pass it again after a re-register.
+  local process_type="${PROCESS_TYPE:-$(cat "$dir/.process_type" 2>/dev/null || echo Background)}"
+  printf '%s\n' "$process_type" > "$dir/.process_type"
 
   mkdir -p "$LAUNCH_AGENTS_DIR"
   cat > "$(plist_path "$runner_name")" <<EOF
@@ -66,7 +71,7 @@ write_plist() {
   <key>KeepAlive</key>
   <true/>
   <key>ProcessType</key>
-  <string>Background</string>
+  <string>$process_type</string>
 </dict>
 </plist>
 EOF

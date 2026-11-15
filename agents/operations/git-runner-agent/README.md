@@ -89,6 +89,9 @@ Environment variables supported by `git_runners.sh`:
 
 - `RUNNER_ROOT`: optional runner root, defaults to `$HOME/actions-runners`
 - `RUNNER_NAMES`: optional space-separated runner names
+- `PROCESS_TYPE`: optional launchd `ProcessType` for `start`, defaults to `Background`, which runs jobs on
+  efficiency cores with throttled I/O. Use `Standard` for runners with CPU-heavy jobs (video renders,
+  builds). It is saved in the instance dir as `.process_type` and kept on later starts.
 
 ## Updating The Runner Version
 
