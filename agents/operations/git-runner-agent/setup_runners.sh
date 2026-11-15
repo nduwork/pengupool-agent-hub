@@ -14,7 +14,7 @@ ARCHIVE_DIR="$RUNNER_ROOT/downloads"
 TEMPLATE_DIR="$RUNNER_ROOT/template"
 INSTANCES_DIR="$RUNNER_ROOT/instances"
 PLATFORM="osx-arm64"
-SAVED_SETTINGS=( .process_type )  # files git_runners.sh saves in an instance dir
+SAVED_SETTINGS=( .process_type .launcher )  # files git_runners.sh saves in an instance dir
 
 if [[ -z "$GITHUB_OWNER" || -z "$GITHUB_REPO" ]]; then
   echo "Set GITHUB_OWNER and GITHUB_REPO before running this script."

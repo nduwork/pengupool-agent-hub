@@ -93,6 +93,12 @@ Environment variables supported by `git_runners.sh`:
   efficiency cores with throttled I/O. Use `Standard` for runners with CPU-heavy jobs (video renders,
   builds). It is saved in the instance dir as `.process_type` and kept on later starts and by
   `setup_runners.sh`. A runner with an invalid value is skipped; the others still start.
+- `LAUNCHER`: optional absolute path of a program that starts the runner (`<launcher> /bin/bash -lc 'exec ./run.sh'`).
+  macOS privacy grants (external drives, Full Disk Access) go to a launchd job's first non-Apple program, which
+  is otherwise `bin*/Runner.Listener` and changes path on every runner update. A fixed launcher that spawns its
+  arguments as a child (not exec), waits for it and exits with it keeps one grant. It must be a file, not an
+  `.app` folder, and its path may not contain `&`, `<` or `>`. Saved as `.launcher`, kept like `.process_type`;
+  delete that file to stop using it.
 
 ## Updating The Runner Version
 
@@ -105,7 +111,7 @@ export RUNNER_VERSION="2.337.0"
 ```
 
 The script refreshes the template install and recreates instance directories from it, keeping each
-runner's saved `PROCESS_TYPE`.
+runner's saved `PROCESS_TYPE` and `LAUNCHER`.
 
 ## Start And Stop
 

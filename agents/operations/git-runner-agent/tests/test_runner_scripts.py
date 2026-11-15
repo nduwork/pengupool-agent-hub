@@ -47,17 +47,34 @@ class RunnerScriptsTest(unittest.TestCase):
         self.assertIn("Skipping r1", r.stderr)
         self.assertIn("<string>Background</string>", self.plist("r2"))
 
+    def test_launcher(self):
+        start = [os.path.join(HERE, "git_runners.sh"), "start"]
+        amp = os.path.join(self.root, "a&b")
+        with open(amp, "w") as f:
+            f.write("#!/bin/sh\n")
+        os.chmod(amp, 0o755)
+        for bad in (self.root, amp):  # a folder; a path XML would break on
+            r = subprocess.run(start, env=dict(self.env, LAUNCHER=bad, RUNNER_NAMES="r1"),
+                               capture_output=True, text=True)
+            self.assertIn("Skipping r1", r.stderr)
+            self.assertFalse(os.path.exists(os.path.join(self.instance("r1"), ".launcher")))
+        subprocess.run(start, env=dict(self.env, LAUNCHER="/usr/bin/true"), check=True, capture_output=True)
+        self.assertIn("<string>/usr/bin/true</string>\n    <string>/bin/bash</string>", self.plist("r2"))
+
     def test_setup_keeps_saved_settings(self):
         template = os.path.join(self.root, "runners", "template")
         os.makedirs(template)
-        with open(os.path.join(self.instance("r1"), ".process_type"), "w") as f:
-            f.write("Standard\n")
+        for name, value in ((".process_type", "Standard\n"), (".launcher", "/usr/bin/true\n")):
+            with open(os.path.join(self.instance("r1"), name), "w") as f:
+                f.write(value)
         # clone_instance only: drop the script's last line, which runs main.
         script = f'eval "$(sed \'$d\' "{HERE}/setup_runners.sh")"; clone_instance r1; clone_instance r2'
         subprocess.run(["bash", "-c", script], env=dict(self.env, GITHUB_OWNER="o", GITHUB_REPO="r"),
                        check=True)
         with open(os.path.join(self.instance("r1"), ".process_type")) as f:
             self.assertEqual(f.read(), "Standard\n")
+        with open(os.path.join(self.instance("r1"), ".launcher")) as f:
+            self.assertEqual(f.read(), "/usr/bin/true\n")
         self.assertFalse(os.path.exists(os.path.join(self.instance("r1"), "run.sh")))
         self.assertFalse(os.path.exists(os.path.join(self.instance("r2"), ".process_type")))
 
